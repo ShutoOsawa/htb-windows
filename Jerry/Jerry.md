@@ -27,12 +27,97 @@ access to `http://jerry.htb:8080`
 apache tomcat 7.0.88 shows up
 ![[Pasted image 20230213152928.png]]
 
-There is a login prompt in Manater App
+There is a login prompt in Manager App
 
-### Trying default password
+
+## Basic authentication
+The login uses basic authentication.
+Using burp suite, we can intercept the login part.
+
+```
+GET /manager/html HTTP/1.1
+
+Host: jerry.htb:8080
+
+Cache-Control: max-age=0
+
+Authorization: Basic YWRtaW46YWRtaW4=
+
+Upgrade-Insecure-Requests: 1
+
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.5304.107 Safari/537.36
+
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+
+Accept-Encoding: gzip, deflate
+
+Accept-Language: en-US,en;q=0.9
+
+Connection: close
+```
+
+Notice that
+`YWRtaW46YWRtaW4=` is base64 and is decoded to `admin:admin`
+
+### Prepare intruder payload
+
+We use this payload and take usernames and passwords for bruteforce enumeration.
 https://github.com/netbiosX/Default-Credentials/blob/master/Apache-Tomcat-Default-Passwords.mdown
 
-tomcat:s3cret
+Lets prepare username lists
+Username
+```
+admin
+both
+manager
+role1
+root
+tomcat
+```
+
+Next, password lists
+Password
+```
+password
+password1
+Password1
+admin
+tomcat
+role1
+manager
+changethis
+root
+r00t
+toor
+s3cret
+```
+
+
+### Burp suite brute force
+We use intruder
+#### Choose custom location
+![[Pasted image 20230214104127.png]]
+
+#### Choose Payload type
+![[Pasted image 20230214104747.png]]
+
+#### Choose Payload Options
+![[Pasted image 20230214104815.png]]
+
+![[Pasted image 20230214104830.png]]
+
+#### Add payload processing
+![[Pasted image 20230214104850.png]]
+
+#### Attack
+![[Pasted image 20230214105013.png]]
+
+`dG9tY2F0OnMzY3JldA==` is `tomcat:s3cret`
+
+
+## Login
+Username: tomcat
+Password:s3cret
 
 ### Upload file
 ![[Pasted image 20230214092623.png]]
