@@ -10,8 +10,7 @@
 - get root flag
 
 # Enumeration
-
-## nmap
+## Nmap
 
 ```
 nmap -sC -sV silo.htb      
@@ -56,7 +55,7 @@ Nmap done: 1 IP address (1 host up) scanned in 159.56 seconds
 
 ```
 
-## feroxbuster
+## Feroxbuster
 ```
 feroxbuster -u http://silo.htb -k
 [####################] - 2m     30000/30000   243/s   http://silo.htb/aspnet_Client/ 
